@@ -1,7 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './WelcomePage.css';
 
-const WelcomePage = ({ onGetStarted }) => {
+const token = localStorage.getItem("authToken");
+
+const WelcomePage = () => {
   return (
     <div className="welcome-container">
       <div className="welcome-content">
@@ -12,9 +15,11 @@ const WelcomePage = ({ onGetStarted }) => {
           <span>🤖 AI Recommendations</span>
           <span>📚 Chapter-wise Practice</span>
         </div>
-        <button className="get-started-btn" onClick={onGetStarted}>
-          Get Started
-        </button>
+        <Link to={token ? "/home" : "/landingpage"}>
+          <button className="get-started-btn">
+            Get Started
+          </button>
+        </Link>
       </div>
     </div>
   );

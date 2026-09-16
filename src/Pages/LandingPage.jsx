@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import './LandingPage.css';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+ //import 'react-toastify/dist/ReactToastify.css';
 
-const API_BASE = "http://127.0.0.1:8000"; // you can switch back later
+const API_BASE = "https://demo-backend-cf9b.onrender.com"; // you can switch back later
 
 const LandingPage = ({ onLoginSuccess }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -15,34 +17,36 @@ const LandingPage = ({ onLoginSuccess }) => {
     name: '',
     email: '',
     username: '',
-    password: '',
+    mobileNumber: '',
+    password: ''
   });
+
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
   const sendJson = async (url, data) => {
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    const result = await response.json();
-    console.log(result);
+      const result = await response.json();
+      console.log(result);
 
-    return result;
-  } catch (error) {
-    console.error("Fetch error:", error);
+      return result;
+    } catch (error) {
+      console.error("Fetch error:", error);
 
-    return {
-      success: false,
-      message: error.message,
-    };
-  }
-};
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!loginData.username.trim() || !loginData.password) {
@@ -52,36 +56,36 @@ const LandingPage = ({ onLoginSuccess }) => {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
-    
+
     const result = await sendJson(`${API_BASE}/login`, loginData);
 
-console.log("Login response:", result);
+    console.log("Login response:", result);
 
-setLoading(false);
+    setLoading(false);
 
-if (result.success) {  
+    if (result.Success) {
+      localStorage.setItem('authToken', result.access_token || "demo-token");
+      setMessage({
+        type: "success",
+        text: "Login successful!",
+      });
 
-  setMessage({
-    type: "success",
-    text: "Login successful!",
-  });
+      setTimeout(() => {
+        navigate("/home");
+      }, 1000);
 
-  setTimeout(() => {
-    console.log("Calling onLoginSuccess");
-    if (onLoginSuccess) onLoginSuccess();
-  }, 1000);
-
-} else {
-  setMessage({
-    type: "error",
-    text: result.message || "Invalid username or password",
-  });
-}  };
+    } else {
+      setMessage({
+        type: "error",
+        text: result.message || "Invalid username or password",
+      });
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    const { name, email, username, password } = registerData;
-    if (!name.trim() || !email.trim() || !username.trim() || !password) {
+    const { name, email, username, mobileNumber, password } = registerData;
+    if (!name.trim() || !email.trim() || !username.trim() || !password.trim() || !mobileNumber.trim()) {
       setMessage({ type: 'error', text: 'All fields are required.' });
       return;
     }
@@ -89,45 +93,50 @@ if (result.success) {
       setMessage({ type: 'error', text: 'Invalid email address.' });
       return;
     }
+    if (!mobileNumber.match(/^\d{10}$/)) {
+      setMessage({ type: 'error', text: 'Invalid mobile number. It should be 10 digits.' });
+      return;
+    }
     setLoading(true);
     setMessage({ type: '', text: '' });
 
-    
+
 
     const result = await sendJson(
-    `${API_BASE}/register`,
-    registerData
-);
+      `${API_BASE}/register`,
+      registerData
+    );
 
-setLoading(false);
+    setLoading(false);
 
-if(result.success){
+    if (result.success) {
 
-    setMessage({
-        type:"success",
-        text:"Account created successfully."
-    });
+      setMessage({
+        type: "success",
+        text: "Account created successfully."
+      });
 
-    setRegisterData({
-        name:"",
-        email:"",
-        username:"",
-        password:""
-    });
+      setRegisterData({
+        name: "",
+        email: "",
+        username: "",
+        mobileNumber: "",
+        password: ""
+      });
 
-    setTimeout(()=>{
+      setTimeout(() => {
         setActiveTab("login");
-    },1000);
+      }, 1000);
 
-}
-else{
+    }
+    else {
 
-    setMessage({
-        type:"error",
-        text:result.message
-    });
+      setMessage({
+        type: "error",
+        text: result.message
+      });
 
-}
+    }
   };
 
   const switchTab = (tab) => {
@@ -136,7 +145,13 @@ else{
   };
 
   return (
+
     <div className="auth-container">
+
+      <div className="hero-header">
+        <h1>MathGenius</h1>
+        <p>AI-Powered Mathematics Practice Portal</p>
+      </div>
       <div className="form-card">
         <div className="tab-switcher">
           <button
@@ -145,6 +160,7 @@ else{
           >
             Login
           </button>
+
           <button
             className={`tab ${activeTab === 'register' ? 'active' : ''}`}
             onClick={() => switchTab('register')}
@@ -175,7 +191,15 @@ else{
                     setLoginData({ ...loginData, password: e.target.value })
                   }
                 />
-                
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  tabIndex={-1}   // prevent focus stealing
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                >
+                  <i className={`fas ${showLoginPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                </button>
               </div>
               <div className="forgot-password">
                 <a href="/forgot-password">Forgot Password?</a>
@@ -215,22 +239,34 @@ else{
               />
             </div>
             <div className="input-group">
+              <label>Mobile Number</label>
+              <input
+                type="text"
+                placeholder="1234567890"
+                value={registerData.mobileNumber}
+                onChange={(e) => setRegisterData({ ...registerData, mobileNumber: e.target.value })}
+              />
+            </div>
+            <div className="input-group">
               <label>Password</label>
               <div className="password-container">
                 <input
-                  type={showRegisterPassword ? "text" : "password"}
-                  placeholder="Create a password"
+                  type={showLoginPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   value={registerData.password}
                   onChange={(e) =>
                     setRegisterData({ ...registerData, password: e.target.value })
                   }
                 />
-                <span
-                  className="eye-icon"
-                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  tabIndex={-1}   // prevent focus stealing
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
                 >
-                  {showRegisterPassword ? <FaEyeSlash /> : <FaEye />}
-                </span>
+                  <i className={`fas ${showLoginPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                </button>
               </div>
             </div>
             <button type="submit" className="submit-btn" disabled={loading}>
